@@ -39,6 +39,13 @@ jobs:
       - name: Strict Clippy
         if: always()
         run: cargo +nightly-2026-10-04 clippy --locked --all --all-targets -- -D warnings
+      - name: Clippy with proven baseline lints allowed
+        if: always()
+        run: >-
+          cargo +nightly-2026-10-04 clippy --locked --all --all-targets --
+          -D warnings -A deprecated -A clippy::definition_in_module_root
+          -A clippy::needless_bool -A clippy::rest_pattern_accessible_field
+          -A clippy::manual_bit_width -A clippy::redundant_else
   original-baseline:
     runs-on: ubuntu-latest
     env:
@@ -66,3 +73,10 @@ jobs:
       - name: Original strict Clippy
         if: always()
         run: cargo +nightly-2026-10-04 clippy --locked --all --all-targets -- -D warnings
+      - name: Original Clippy with proven baseline lints allowed
+        if: always()
+        run: >-
+          cargo +nightly-2026-10-04 clippy --locked --all --all-targets --
+          -D warnings -A deprecated -A clippy::definition_in_module_root
+          -A clippy::needless_bool -A clippy::rest_pattern_accessible_field
+          -A clippy::manual_bit_width -A clippy::redundant_else
