@@ -80,12 +80,13 @@ where
 
         let mut left = range.start + self.size;
         let mut right = range.end + self.size;
-        let mut result = None;
+        let mut left_result = None;
+        let mut right_result = None;
 
         // Iterate through the segment tree to accumulate results
         while left < right {
             if left % 2 == 1 {
-                result = Some(match result {
+                left_result = Some(match left_result {
                     None => self.nodes[left],
                     Some(old) => (self.merge_fn)(old, self.nodes[left]),
                 });
@@ -93,16 +94,20 @@ where
             }
             if right % 2 == 1 {
                 right -= 1;
-                result = Some(match result {
+                right_result = Some(match right_result {
                     None => self.nodes[right],
-                    Some(old) => (self.merge_fn)(old, self.nodes[right]),
+                    Some(old) => (self.merge_fn)(self.nodes[right], old),
                 });
             }
             left /= 2;
             right /= 2;
         }
 
-        Ok(result)
+        Ok(match (left_result, right_result) {
+            (Some(left), Some(right)) => Some((self.merge_fn)(left, right)),
+            (Some(result), None) | (None, Some(result)) => Some(result),
+            (None, None) => None,
+        })
     }
 
     /// Updates the value at the specified index in the segment tree.
