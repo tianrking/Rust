@@ -30,7 +30,39 @@ jobs:
         run: cargo +nightly-2026-10-04 test data_structures::segment_tree::tests -- --nocapture
       - name: Format
         run: cargo +nightly-2026-10-04 fmt --all -- --check
+      - name: Changed source format
+        if: always()
+        run: rustfmt +nightly-2026-10-04 --edition 2021 --check src/data_structures/segment_tree.rs
       - name: Full package tests
+        if: always()
         run: cargo +nightly-2026-10-04 test --locked
       - name: Strict Clippy
+        if: always()
+        run: cargo +nightly-2026-10-04 clippy --locked --all --all-targets -- -D warnings
+  original-baseline:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_BUILD_JOBS: 1
+      RUST_TEST_THREADS: 1
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: 2345c668b05ecb6fa074138bdbc5a1cbf2afaec8
+      - name: Install official nightly
+        run: rustup toolchain install nightly-2026-10-04 --profile minimal --component clippy,rustfmt --no-self-update
+      - name: Record original HEAD and toolchain
+        run: |
+          rustc +nightly-2026-10-04 --version
+          cargo +nightly-2026-10-04 --version
+          git rev-parse HEAD
+          git hash-object src/data_structures/segment_tree.rs
+      - name: Original full format
+        run: cargo +nightly-2026-10-04 fmt --all -- --check
+      - name: Original full package tests
+        if: always()
+        run: cargo +nightly-2026-10-04 test
+      - name: Original strict Clippy
+        if: always()
         run: cargo +nightly-2026-10-04 clippy --locked --all --all-targets -- -D warnings
