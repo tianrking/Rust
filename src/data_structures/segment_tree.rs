@@ -80,13 +80,12 @@ where
 
         let mut left = range.start + self.size;
         let mut right = range.end + self.size;
-        let mut left_result = None;
-        let mut right_result = None;
+        let mut result = None;
 
         // Iterate through the segment tree to accumulate results
         while left < right {
             if left % 2 == 1 {
-                left_result = Some(match left_result {
+                result = Some(match result {
                     None => self.nodes[left],
                     Some(old) => (self.merge_fn)(old, self.nodes[left]),
                 });
@@ -94,20 +93,16 @@ where
             }
             if right % 2 == 1 {
                 right -= 1;
-                right_result = Some(match right_result {
+                result = Some(match result {
                     None => self.nodes[right],
-                    Some(old) => (self.merge_fn)(self.nodes[right], old),
+                    Some(old) => (self.merge_fn)(old, self.nodes[right]),
                 });
             }
             left /= 2;
             right /= 2;
         }
 
-        Ok(match (left_result, right_result) {
-            (Some(left), Some(right)) => Some((self.merge_fn)(left, right)),
-            (Some(result), None) | (None, Some(result)) => Some(result),
-            (None, None) => None,
-        })
+        Ok(result)
     }
 
     /// Updates the value at the specified index in the segment tree.
@@ -266,6 +261,11 @@ mod tests {
                 left.then(right)
             });
             let calls_after_build = calls.get();
+            assert_eq!(
+                tree.query(values.len()..values.len()),
+                Err(SegmentTreeError::InvalidRange)
+            );
+            assert_eq!(calls.get(), calls_after_build);
             for (index, value) in values.iter().enumerate() {
                 assert_eq!(tree.query(index..index), Ok(None));
                 assert_eq!(calls.get(), calls_after_build);

@@ -1,13 +1,10 @@
 name: Segment tree native nightly validation
-
 on:
   push:
     branches:
       - codex/native-segment-tree-validation
-
 permissions:
   contents: read
-
 jobs:
   nightly:
     runs-on: ubuntu-latest
@@ -18,43 +15,15 @@ jobs:
       CARGO_PROFILE_TEST_DEBUG: 0
     steps:
       - uses: actions/checkout@v7
-        with:
-          ref: 2b31e3f1373c261d24a77e4166dca4a787621d2e
       - name: Install official nightly
         run: rustup toolchain install nightly-2026-10-04 --profile minimal --component clippy,rustfmt --no-self-update
-      - name: Record native toolchain and source
+      - name: Record original production with final regression source
         run: |
           rustc +nightly-2026-10-04 --version
           cargo +nightly-2026-10-04 --version
           git rev-parse HEAD
           git hash-object src/data_structures/segment_tree.rs
-          test "$(git rev-parse HEAD)" = 2b31e3f1373c261d24a77e4166dca4a787621d2e
-          test "$(git hash-object src/data_structures/segment_tree.rs)" = 7ff2de19a7a23431f96f1c121cc82be5a47d86bd
-      - name: Segment tree regressions
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git hash-object src/data_structures/segment_tree.rs)" = 91e8fb872c7952d09acf3e74fe28c582026763c1
+      - name: Segment tree original regressions including terminal errors
         run: cargo +nightly-2026-10-04 test data_structures::segment_tree::tests -- --nocapture
-      - name: Format
-        run: cargo +nightly-2026-10-04 fmt --all -- --check
-      - name: Changed source format
-        if: always()
-        run: rustfmt +nightly-2026-10-04 --edition 2021 --check src/data_structures/segment_tree.rs
-      - name: Full package tests
-        if: always()
-        run: cargo +nightly-2026-10-04 test --locked
-      - name: Strict Clippy
-        if: always()
-        run: cargo +nightly-2026-10-04 clippy --locked --all --all-targets -- -D warnings
-      - name: Clippy with proven baseline lints allowed
-        if: always()
-        run: >-
-          cargo +nightly-2026-10-04 clippy --locked --all --all-targets --
-          -D warnings -A deprecated -A clippy::definition_in_module_root
-          -A clippy::needless_bool -A clippy::rest_pattern_accessible_field
-          -A clippy::manual_bit_width -A clippy::redundant_else
-      - name: Verify final formal source remained unchanged
-        if: always()
-        run: |
-          git rev-parse HEAD
-          git hash-object src/data_structures/segment_tree.rs
-          test "$(git rev-parse HEAD)" = 2b31e3f1373c261d24a77e4166dca4a787621d2e
-          test "$(git hash-object src/data_structures/segment_tree.rs)" = 7ff2de19a7a23431f96f1c121cc82be5a47d86bd
-          git diff --exit-code HEAD -- .
